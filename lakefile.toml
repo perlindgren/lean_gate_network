@@ -1,0 +1,6 @@
+name = "gate_optimization"
+version = "0.1.0"
+defaultTargets = ["GateOptimization"]
+
+[[lean_lib]]
+name = "GateOptimization"
