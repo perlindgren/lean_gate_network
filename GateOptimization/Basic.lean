@@ -9,10 +9,11 @@ def and_gate (x y : Bool) : Bool :=
 #eval (and_gate true  true)
 
 inductive Net where
-| term: Bool -> Net
-| inv:  Net  -> Net
-| and:  Net  -> Net -> Net
-| or:   Net  -> Net -> Net
+| term: Bool   -> Net
+| var:  String -> Net
+| inv:  Net    -> Net
+| and:  Net    -> Net -> Net
+| or:   Net    -> Net -> Net
 deriving Repr
 
 @[match_pattern] -- used in net_min below
@@ -20,61 +21,66 @@ def f: Net := .term false
 @[match_pattern]
 def t: Net := .term true
 
-
-def net_eval (n:Net) : Bool :=
+def eval (n:Net) (env: String -> Bool) : Bool :=
   match n with
-  | Net.term b => b
-  | Net.inv i => ! net_eval i
-  | Net.and x y => (net_eval x) && (net_eval y)
-  | Net.or x y =>  (net_eval x) || (net_eval y)
+  | .term b  => b
+  | .var s   => env s
+  | .inv i   => ! eval i env
+  | .and x y => (eval x env) && (eval y env)
+  | .or x y  => (eval x env) || (eval y env)
 
+def ofList (xs : List (String × Bool)) : String → Bool := fun name =>
+  xs.find? (fun elem => elem.fst == name) |>.map Prod.snd |>.getD false
 
-#eval net_eval t
-#eval net_eval f
-#check (fun (a:Bool) => Net.term a)
+-- example environment
+def env := ofList [("x", true), ("y", false)]
 
-#check (fun (a:Bool) => (net_eval (.and t (.term a))))
-#eval (fun (a:Bool) => (net_eval (.and t (.term a)))) false
-#eval (fun (a:Bool) => (net_eval (.and t (.term a)))) true
-
-#check Net.term
-
-def net (a: Net) : Net := .and a (.inv a)
-#check net
-#check (net_eval (net t))
-
-#eval net_eval (.and t f)
-#eval net_eval (.and t t)
+#eval eval t env
+#eval eval f env
+#eval eval (.and (.var "x") (.var "y")) env
+#eval eval (.and t f) env
+#eval eval (.and t t) env
 
 def net_min (n:Net) : Net :=
   match n with
-  | .term _       => n
-  | .inv i        => match net_min i with
-    | t           => f
-    | f           => t
-    | .inv ii     => ii
-    | ii          => .inv ii
-  | .and l r      => match net_min l, net_min r with
+  | .term _
+  | .var _   => n
+  | .inv i   => match net_min i with
+    | t        => f
+    | f        => t
+    | .inv ii  => ii -- double inversion
+    | ii       => .inv ii
+  | .and l r => match net_min l, net_min r with
     | f, _
-    | _, f   => f
-    | t, t   => t
-    | ll, rr => .and ll rr
+    | _, f     => f
+    | t, t     => t
+    | t, o
+    | o, t     => o
+    | ll, rr   => .and ll rr
   | .or l r  => match net_min l, net_min r with
     | t, _
-    | _, t   => t
-    | f, f   => f
-    | ll, rr => .or ll rr
+    | _, t     => t
+    | f, f     => f
+    | f, o
+    | o, f     => o
+    | ll, rr   => .or ll rr
 
+#eval net_min (.inv t)
+#eval net_min (.inv f)
 #eval net_min (.and t t)
+#eval net_min (.and t (.var "x"))
+#eval net_min (.and (.var "x") t)
+#eval net_min (.and (.var "x") f)
+#eval net_min (.and f (.var "x"))
 #eval net_min (.and (.and f t) t)
-#eval net_min (.and (.or t f) t)
+#eval net_min (.and (.or (.var "y") f) t)
 #eval net_min (.or t (.or t f))
-#eval net_min (.or t (.or t f))
+#eval net_min (.or f (.or f f))
 
 
-theorem net_min_correct : ∀ n, net_eval n = net_eval (net_min n) := by
+theorem net_min_correct : ∀ n, eval n = eval (net_min n) := by
   intro n
-  induction n using net_min.induct <;> simp [net_eval, net_min, *]
+  induction n using net_min.induct <;> simp [eval, net_min, *]
 
 -- theorem net_min_proof:  ∀ n, net_eval (net_min n) = net_eval n := by
 --   intro n
