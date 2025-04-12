@@ -82,38 +82,109 @@ theorem net_min_correct : ∀ n, eval n = eval (net_min n) := by
   intro n
   induction n using net_min.induct <;> simp [eval, net_min, *]
 
--- theorem net_min_proof:  ∀ n, net_eval (net_min n) = net_eval n := by
---   intro n
---   induction n
---   . simp [net_min, net_eval]
---   . rw [net_min]
---     split
---     . rw [net_eval]
---       rw [net_eval]
---       simp
---       rw [heqt]
-
---     . sorry
---     . sorry
---   . sorry
---   . rw [net_min]
---     split
---     .
---     . sorry
---     sorry
---   . sorry
+#print net_min_correct
 
 
 
-  -- rw [net_min.eq_def]
-  -- cases n
-  -- . simp
-  -- .
-  -- . sorry
+theorem net_min_proof:  ∀ n m, eval n m = eval (net_min n) m  := by unhygienic
+  intro n
+  induction n
+  . simp [net_min, eval] --term
+  . simp [net_min, eval] --var
+  -- inv
+  . simp [net_min]
+    simp [eval]
+    split
+    . simp [a_ih]
+      rename_i X
+      simp [X]
+      simp [eval]
+    . simp [a_ih]
+      rename_i X
+      simp [X]
+      simp [eval]
+    . simp [a_ih]
+      rename_i X
+      simp [X]
+      simp [eval]
+    . simp [a_ih]
+      simp [eval]
+  -- and
+  . simp [eval]
+    simp [net_min]
+    split
+    . -- and f,_
+      simp [a_ih]
+      simp [eval]
+      rename_i X
+      simp [X]
+      simp [eval]
+    . -- and _,f
+      simp [a_ih_1]
+      simp [eval]
+      rename_i X
+      simp [X]
+      simp [eval]
+    . -- and t, t
+      simp [a_ih]
+      simp [a_ih_1]
+      rename_i X1 X2
+      simp [X1]
+      simp [X2]
+      simp [eval]
+    . -- and t, o
+      simp [a_ih]
+      rename_i X
+      simp [X]
+      simp [eval]
+      exact a_ih_1
+    . -- and o, t
+      simp [a_ih_1]
+      rename_i X
+      simp [X]
+      simp [eval]
+      exact a_ih
+    . -- and ll, rr
+      simp [a_ih]
+      simp [a_ih_1]
+      simp [eval]
 
-
-
-  -- cases (net_min n)
-  -- .
-  -- . sorry
-  -- . sorry
+  -- or
+  . simp [eval]
+    simp [net_min]
+    split
+    . -- or t,_
+      simp [a_ih]
+      simp [eval]
+      rename_i X
+      simp [X]
+      simp [eval]
+    . -- or _,t
+      simp [a_ih_1]
+      simp [eval]
+      rename_i X
+      simp [X]
+      simp [eval]
+    . -- or f,f
+      simp [a_ih]
+      simp [a_ih_1]
+      rename_i X1 X2
+      simp [X1]
+      simp [X2]
+      simp [eval]
+    . -- or f, o
+      simp [a_ih]
+      rename_i X
+      simp [X]
+      simp [eval]
+      exact a_ih_1
+    . -- or o, f
+      simp [a_ih_1]
+      rename_i X
+      simp [X]
+      simp [eval]
+      exact a_ih
+    . -- or ll, rr
+      simp [a_ih]
+      simp [a_ih_1]
+      simp [eval]
